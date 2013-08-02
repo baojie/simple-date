@@ -1,12 +1,9 @@
 
-from __future__ import with_statement
-#from functools import lru_cache
-from functools32 import lru_cache
+from functools import lru_cache
 from simpledate.utils import HashableDict
-from itertools import imap
 
 try:
-    from thread import allocate_lock as _thread_allocate_lock
+    from _thread import allocate_lock as _thread_allocate_lock
 except ImportError:
     from _dummy_thread import allocate_lock as _thread_allocate_lock
 from _strptime import LocaleTime, _calc_julian_from_U_or_W
@@ -30,7 +27,7 @@ from re import sub, escape, compile, IGNORECASE
 
 
 def tokenizer(fmt):
-    u'''
+    '''
     Split a format into a series of tokens, adding parens for optional values.
 
     For example,
@@ -46,23 +43,23 @@ def tokenizer(fmt):
         j = i + 1
 
         # if we have a symbol, include that
-        if fmt[i] == u'%':
+        if fmt[i] == '%':
             j += 1
             if j > n:
-                raise ValueError(u'Incomplete token - nothing follows %')
+                raise ValueError('Incomplete token - nothing follows %')
 
             # include a ! prefix
-            if fmt[j-1] == u'!':
+            if fmt[j-1] == '!':
                 j += 1
                 if j > n:
-                    raise ValueError(u'Incomplete token - nothing follows %!')
+                    raise ValueError('Incomplete token - nothing follows %!')
 
         # if we have a trailing ? then enclose anything not in parens so
         # that we generate the regexp marker to test for inclusion
-        optional = j + 1 < n and fmt[j:j+2] == u'%?'
-        single = fmt[i:j] != u'%)'
+        optional = j + 1 < n and fmt[j:j+2] == '%?'
+        single = fmt[i:j] != '%)'
         if optional and single:
-            yield u'%('
+            yield '%('
 
         # the token itself
         yield fmt[i:j]
@@ -70,15 +67,15 @@ def tokenizer(fmt):
         # additional tokens to handle optional values as above
         if optional:
             if single:
-                yield u'%)'
-            yield u'%?'
+                yield '%)'
+            yield '%?'
             j += 2
 
         i = j
 
 
 def _to_regexp(fmt, to_regex=None, to_write=None):
-    u'''
+    '''
     Given a format, construct the equivalent regexp (and compile it) and
     the information needed to reconstruct a matching template after use.
 
@@ -100,8 +97,8 @@ def _to_regexp(fmt, to_regex=None, to_write=None):
     if to_write is None: to_write = DEFAULT_TO_WRITE
 
     # escape things that are related to regexps
-    fmt = sub(ur'([\^$*+?\(\){}\[\]|])(?<!%.)', ur'\\\1', fmt)
-    fmt = sub(ur'([\.])(?<!%!.)', ur'\\\1', fmt)
+    fmt = sub(r'([\^$*+?\(\){}\[\]|])(?<!%.)', r'\\\1', fmt)
+    fmt = sub(r'([\.])(?<!%!.)', r'\\\1', fmt)
 
     # we build a set of templates that can be used to construct the pattern
     # that would match the data.  we do this by tracking whether each group
@@ -111,9 +108,9 @@ def _to_regexp(fmt, to_regex=None, to_write=None):
     # examples that might help clarify how it works.
     count = 0  # latest group
     stack = [0]  # nested groups
-    rebuild = defaultdict(lambda: u'')  # group substitutions
+    rebuild = defaultdict(lambda: '')  # group substitutions
 
-    _to_regexp.regex = u''
+    _to_regexp.regex = ''
     tokens = tokenizer(fmt)
 
     def append(token, write=None):
@@ -121,49 +118,49 @@ def _to_regexp(fmt, to_regex=None, to_write=None):
         _to_regexp.regex += to_regex.get(token, token)
         if write is None:
             write = token
-        rebuild[u'G%d' % stack[-1]] += to_write.get(write, write)
+        rebuild['G%d' % stack[-1]] += to_write.get(write, write)
 
     try:
         while True:
-            token = tokens.next()
+            token = next(tokens)
             append(token)
-            if token == u'%(':
+            if token == '%(':
                 count += 1
-                append(u'((?P<G%d>)' % count, u'%%G%d%%' % count)
+                append('((?P<G%d>)' % count, '%%G%d%%' % count)
                 stack.append(count)
-            elif token == u'%|':
+            elif token == '%|':
                 if not stack.pop():
-                    raise ValueError(u'Unexpected %| - must be within %(...%)')
+                    raise ValueError('Unexpected %| - must be within %(...%)')
                 count += 1
-                append(u'|(?P<G%d>)' % count, u'%%G%d%%' % count)
+                append('|(?P<G%d>)' % count, '%%G%d%%' % count)
                 stack.append(count)
-            elif token == u'%)':
+            elif token == '%)':
                 if not stack.pop():
-                    raise ValueError(u'Unmatched %)')
-                append(u')', u'')
+                    raise ValueError('Unmatched %)')
+                append(')', '')
     except StopIteration:
         pass
     if stack != [0]:
-        raise ValueError(u'Unmatched %(')
+        raise ValueError('Unmatched %(')
 
     return _to_regexp.regex, rebuild, compile(_to_regexp.regex, IGNORECASE)
 
 
-TAG = compile(ur'(?:^|[^%])%(G\d+)%')
+TAG = compile(r'(?:^|[^%])%(G\d+)%')
 
 def reconstruct(rebuild, found_dict):
-    u'''
+    '''
     Implement the reconstruction described above, using the rebuild dictionary
     and the group information from a particular match.
     '''
-    fmt = rebuild[u'G0']
+    fmt = rebuild['G0']
     while True:
         match = TAG.search(fmt)
         if not match:
-            return sub(ur'\\(.)', ur'\1', fmt)
+            return sub(r'\\(.)', r'\1', fmt)
         index = match.group(1)
         if found_dict.get(index) is None:
-            replacement = u''
+            replacement = ''
         else:
             replacement = rebuild[index]
         fmt = fmt[:match.start(1)-1] + replacement + fmt[match.end(1)+1:]
@@ -173,87 +170,87 @@ LOCALE_TIME = LocaleTime()
 
 
 def seq_to_re(to_convert, directive):
-    u'''Copied from strptime method'''
+    '''Copied from strptime method'''
     to_convert = sorted(to_convert, key=len, reverse=True)
     for value in to_convert:
-        if value != u'':
+        if value != '':
             break
     else:
-        return u''
-    regex = u'|'.join(escape(stuff) for stuff in to_convert)
-    regex = u'(?P<%s>%s' % (directive, regex)
-    return u'%s)' % regex
+        return ''
+    regex = '|'.join(escape(stuff) for stuff in to_convert)
+    regex = '(?P<%s>%s' % (directive, regex)
+    return '%s)' % regex
 
 
-WEEK_NUMBER = lambda x: ur'(?P<%s>5[0-3]|[0-4]\d|\d)' % x
-WORD = lambda x: ur'(?P<%s>(?:\w(?<=[^\d_]))+)' % x
-SYMBOL = ur'\W+'
+WEEK_NUMBER = lambda x: r'(?P<%s>5[0-3]|[0-4]\d|\d)' % x
+WORD = lambda x: r'(?P<%s>(?:\w(?<=[^\d_]))+)' % x
+SYMBOL = r'\W+'
 
 
 # these are the definitions used in the standard Python implementation
 # (use hashable dict for cache around _to_regex).
 
 BASE_TO_REGEX = HashableDict({
-    u' ': u'\s+',
-    u'%a': seq_to_re(LOCALE_TIME.a_weekday, u'a'),
-    u'%A': seq_to_re(LOCALE_TIME.f_weekday, u'A'),
-    u'%b': seq_to_re(LOCALE_TIME.a_month[1:], u'b'),
-    u'%B': seq_to_re(LOCALE_TIME.f_month[1:], u'B'),
-    u'%d': ur'(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])',
-    u'%f': ur'(?P<f>[0-9]{1,6})',
-    u'%H': ur'(?P<H>2[0-3]|[0-1]\d|\d)',
-    u'%I': ur'(?P<I>1[0-2]|0[1-9]|[1-9])',
-    u'%j': ur'(?P<j>36[0-6]|3[0-5]\d|[1-2]\d\d|0[1-9]\d|00[1-9]|[1-9]\d|0[1-9]|[1-9])',
-    u'%m': ur'(?P<m>1[0-2]|0[1-9]|[1-9])',
-    u'%p': seq_to_re(LOCALE_TIME.am_pm, u'p'),
-    u'%M': ur'(?P<M>[0-5]\d|\d)',
-    u'%S': ur'(?P<S>6[0-1]|[0-5]\d|\d)',
-    u'%U': WEEK_NUMBER(u'U'),
-    u'%w': ur'(?P<w>[0-6])',
-    u'%W': WEEK_NUMBER(u'W'),
-    u'%y': ur'(?P<y>\d\d)',
-    u'%Y': ur'(?P<Y>\d\d\d\d)',
-    u'%z': ur'(?P<z>[+-]\d\d[0-5]\d)',
-    u'%Z': ur'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
-    u'%%': u'%',
+    ' ': '\s+',
+    '%a': seq_to_re(LOCALE_TIME.a_weekday, 'a'),
+    '%A': seq_to_re(LOCALE_TIME.f_weekday, 'A'),
+    '%b': seq_to_re(LOCALE_TIME.a_month[1:], 'b'),
+    '%B': seq_to_re(LOCALE_TIME.f_month[1:], 'B'),
+    '%d': r'(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])',
+    '%f': r'(?P<f>[0-9]{1,6})',
+    '%H': r'(?P<H>2[0-3]|[0-1]\d|\d)',
+    '%I': r'(?P<I>1[0-2]|0[1-9]|[1-9])',
+    '%j': r'(?P<j>36[0-6]|3[0-5]\d|[1-2]\d\d|0[1-9]\d|00[1-9]|[1-9]\d|0[1-9]|[1-9])',
+    '%m': r'(?P<m>1[0-2]|0[1-9]|[1-9])',
+    '%p': seq_to_re(LOCALE_TIME.am_pm, 'p'),
+    '%M': r'(?P<M>[0-5]\d|\d)',
+    '%S': r'(?P<S>6[0-1]|[0-5]\d|\d)',
+    '%U': WEEK_NUMBER('U'),
+    '%w': r'(?P<w>[0-6])',
+    '%W': WEEK_NUMBER('W'),
+    '%y': r'(?P<y>\d\d)',
+    '%Y': r'(?P<Y>\d\d\d\d)',
+    '%z': r'(?P<z>[+-]\d\d[0-5]\d)',
+    '%Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,})',
+    '%%': '%',
 })
 
 PYTHON_TO_REGEX= HashableDict(BASE_TO_REGEX)
 PYTHON_TO_REGEX.update({
-    u'%c': _to_regexp(LOCALE_TIME.LC_date_time, BASE_TO_REGEX, {})[0],
-    u'%x': _to_regexp(LOCALE_TIME.LC_date, BASE_TO_REGEX, {})[0],
-    u'%X': _to_regexp(LOCALE_TIME.LC_time, BASE_TO_REGEX, {})[0],
+    '%c': _to_regexp(LOCALE_TIME.LC_date_time, BASE_TO_REGEX, {})[0],
+    '%x': _to_regexp(LOCALE_TIME.LC_date, BASE_TO_REGEX, {})[0],
+    '%X': _to_regexp(LOCALE_TIME.LC_time, BASE_TO_REGEX, {})[0],
 })
 
 
 # extra definitions allowing more flexible matching.
 
 FLEXIBLE_REGEX = HashableDict({
-    u'%! ': SYMBOL,  # these match any symbol but will write as the name
-    u'%!:': SYMBOL,
-    u'%!.': SYMBOL,
-    u'%!,': SYMBOL,
-    u'%!-': SYMBOL,
-    u'%!/': SYMBOL,
-    u'%!a': WORD(u'a'),  # match any word, but write from local
-    u'%!A': WORD(u'A'),
-    u'%!b': WORD(u'b'),
-    u'%!B': WORD(u'B'),
-    u'%!d': ur'(?P<d>3[0-1]|[1-2]\d|0[1-9])',  # 2 digits only
-    u'%!H': ur'(?P<H>2[0-3]|[0-1]\d)',         # 2 digits only
-    u'%!m': ur'(?P<m>1[0-2]|0[1-9])',          # 2 digits only
-    u'%!M': ur'(?P<M>[0-5]\d)',                # 2 digits only
-    u'%!S': ur'(?P<S>6[0-1]|[0-5]\d)',         # 2 digits only
-    u'%!y': ur'(?P<y50>\d\d)',                 # switch at 1950
-    u'%!z': ur'(?P<z>[+-]\d\d\W?[0-5]\d)',      # character between h + m
-    u'%!Z': ur'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,}|Z)',
-    u'%?': u'?',
+    '%! ': SYMBOL,  # these match any symbol but will write as the name
+    '%!:': SYMBOL,
+    '%!.': SYMBOL,
+    '%!,': SYMBOL,
+    '%!-': SYMBOL,
+    '%!/': SYMBOL,
+    '%!a': WORD('a'),  # match any word, but write from local
+    '%!A': WORD('A'),
+    '%!b': WORD('b'),
+    '%!B': WORD('B'),
+    '%!d': r'(?P<d>3[0-1]|[1-2]\d|0[1-9])',  # 2 digits only
+    '%!H': r'(?P<H>2[0-3]|[0-1]\d)',         # 2 digits only
+    '%!m': r'(?P<m>1[0-2]|0[1-9])',          # 2 digits only
+    '%!M': r'(?P<M>[0-5]\d)',                # 2 digits only
+    '%!S': r'(?P<S>6[0-1]|[0-5]\d)',         # 2 digits only
+    '%!y': r'(?P<y50>\d\d)',                 # switch at 1950
+    '%!z': r'(?P<z>[+-]\d\d\W?[0-5]\d)',      # character between h + m
+    '%!Z': r'(?P<Z>[A-Z][A-Za-z_]+(?:/[A-Z][A-Za-z_]+)+|[A-Z]{3,}|Z)',
+    '%?': '?',
 })
 
 HIDE_CHOICES = HashableDict({
-    u'%(': u'',
-    u'%|': u'',
-    u'%)': u'',
+    '%(': '',
+    '%|': '',
+    '%)': '',
 })
 
 DEFAULT_TO_REGEX = HashableDict(PYTHON_TO_REGEX)
@@ -262,7 +259,7 @@ DEFAULT_TO_REGEX.update(HIDE_CHOICES)
 
 
 def auto_convert(key):
-    u'''
+    '''
     Infer transformations needed to generate a write template from an
     extended read template by using the information in the transformations
     needed to generate a regex from an extended read template.
@@ -272,13 +269,13 @@ def auto_convert(key):
     if symbol in PYTHON_TO_REGEX:
         return key, symbol
     # if it's an extended match, return the unextended version
-    elif len(key) == 3 and key[0:2] == u'%!':
+    elif len(key) == 3 and key[0:2] == '%!':
         return key, key[-1]
     # otherwise, remove it
     else:
-        return key, u''
+        return key, ''
 
-DEFAULT_TO_WRITE = dict(imap(auto_convert, FLEXIBLE_REGEX.keys()))
+DEFAULT_TO_WRITE = dict(map(auto_convert, FLEXIBLE_REGEX.keys()))
 DEFAULT_TO_WRITE.update(HIDE_CHOICES)
 
 
@@ -299,7 +296,7 @@ def to_regexp(fmt, substitutions=None):
 # modified handling for y50, and uzing -ve indices for z minutes.
 
 def to_time_tuple(found_dict):
-    u'''Closely based on _strptime in standard Python.'''
+    '''Closely based on _strptime in standard Python.'''
     year = None
     month = day = 1
     hour = minute = second = fraction = 0
@@ -316,8 +313,8 @@ def to_time_tuple(found_dict):
         #      handled by making out of other directives
         #   U, W
         #      worthless without day of the week
-        if group_key == u'y':
-            year = int(found_dict[u'y'])
+        if group_key == 'y':
+            year = int(found_dict['y'])
             # Open Group specification for strptime() states that a %y
             #value in the range of [00, 68] is in the century 2000, while
             #[69,99] is in the century 1900
@@ -325,30 +322,30 @@ def to_time_tuple(found_dict):
                 year += 2000
             else:
                 year += 1900
-        elif group_key == u'y50':
-            year = int(found_dict[u'y50'])
+        elif group_key == 'y50':
+            year = int(found_dict['y50'])
             # ASN.1 / RFC 3852
             if year < 50:
                 year += 2000
             else:
                 year += 1900
-        elif group_key == u'Y':
-            year = int(found_dict[u'Y'])
-        elif group_key == u'm':
-            month = int(found_dict[u'm'])
-        elif group_key == u'B':
-            month = LOCALE_TIME.f_month.index(found_dict[u'B'].lower())
-        elif group_key == u'b':
-            month = LOCALE_TIME.a_month.index(found_dict[u'b'].lower())
-        elif group_key == u'd':
-            day = int(found_dict[u'd'])
-        elif group_key == u'H':
-            hour = int(found_dict[u'H'])
-        elif group_key == u'I':
-            hour = int(found_dict[u'I'])
-            ampm = found_dict.get(u'p', u'').lower()
+        elif group_key == 'Y':
+            year = int(found_dict['Y'])
+        elif group_key == 'm':
+            month = int(found_dict['m'])
+        elif group_key == 'B':
+            month = LOCALE_TIME.f_month.index(found_dict['B'].lower())
+        elif group_key == 'b':
+            month = LOCALE_TIME.a_month.index(found_dict['b'].lower())
+        elif group_key == 'd':
+            day = int(found_dict['d'])
+        elif group_key == 'H':
+            hour = int(found_dict['H'])
+        elif group_key == 'I':
+            hour = int(found_dict['I'])
+            ampm = found_dict.get('p', '').lower()
             # If there was no AM/PM indicator, we'll treat this like AM
-            if ampm in (u'', LOCALE_TIME.am_pm[0]):
+            if ampm in ('', LOCALE_TIME.am_pm[0]):
                 # We're in AM so the hour is correct unless we're
                 # looking at 12 midnight.
                 # 12 midnight == 12 AM == hour 0
@@ -360,51 +357,51 @@ def to_time_tuple(found_dict):
                 # 12 noon == 12 PM == hour 12
                 if hour != 12:
                     hour += 12
-        elif group_key == u'M':
-            minute = int(found_dict[u'M'])
-        elif group_key == u'S':
-            second = int(found_dict[u'S'])
-        elif group_key == u'f':
-            s = found_dict[u'f']
+        elif group_key == 'M':
+            minute = int(found_dict['M'])
+        elif group_key == 'S':
+            second = int(found_dict['S'])
+        elif group_key == 'f':
+            s = found_dict['f']
             # Pad to always return microseconds.
-            s += u"0" * (6 - len(s))
+            s += "0" * (6 - len(s))
             fraction = int(s)
-        elif group_key == u'A':
-            weekday = LOCALE_TIME.f_weekday.index(found_dict[u'A'].lower())
-        elif group_key == u'a':
-            weekday = LOCALE_TIME.a_weekday.index(found_dict[u'a'].lower())
-        elif group_key == u'w':
-            weekday = int(found_dict[u'w'])
+        elif group_key == 'A':
+            weekday = LOCALE_TIME.f_weekday.index(found_dict['A'].lower())
+        elif group_key == 'a':
+            weekday = LOCALE_TIME.a_weekday.index(found_dict['a'].lower())
+        elif group_key == 'w':
+            weekday = int(found_dict['w'])
             if weekday == 0:
                 weekday = 6
             else:
                 weekday -= 1
-        elif group_key == u'j':
-            julian = int(found_dict[u'j'])
-        elif group_key in (u'U', u'W'):
+        elif group_key == 'j':
+            julian = int(found_dict['j'])
+        elif group_key in ('U', 'W'):
             week_of_year = int(found_dict[group_key])
-            if group_key == u'U':
+            if group_key == 'U':
                 # U starts week on Sunday.
                 week_of_year_start = 6
             else:
                 # W starts week on Monday.
                 week_of_year_start = 0
-        elif group_key == u'z':
-            z = found_dict[u'z']
+        elif group_key == 'z':
+            z = found_dict['z']
             tzoffset = int(z[1:3]) * 60 + int(z[-2:])
-            if z.startswith(u"-"):
+            if z.startswith("-"):
                 tzoffset = -tzoffset
-        elif group_key == u'Z':
+        elif group_key == 'Z':
             # Since -1 is default value only need to worry about setting tz if
             # it can be something other than -1.
-            found_zone = found_dict[u'Z'].lower()
+            found_zone = found_dict['Z'].lower()
             for value, tz_values in enumerate(LOCALE_TIME.timezone):
                 if found_zone in tz_values:
                     # Deal with bad locale setup where timezone names are the
                     # same and yet time.daylight is true; too ambiguous to
                     # be able to tell what timezone has daylight savings
                     if (time.tzname[0] == time.tzname[1] and
-                       time.daylight and found_zone not in (u"utc", u"gmt")):
+                       time.daylight and found_zone not in ("utc", "gmt")):
                         break
                     else:
                         tz = value
@@ -437,7 +434,7 @@ def to_time_tuple(found_dict):
     if weekday == -1:
         weekday = date(year, month, day).weekday()
     # Add timezone info
-    tzname = found_dict.get(u'Z')
+    tzname = found_dict.get('Z')
     if tzoffset is not None:
         gmtoff = tzoffset * 60
     else:
@@ -454,24 +451,24 @@ def to_time_tuple(found_dict):
             weekday, julian, tz, tzname, gmtoff), fraction
 
 
-def strptime(data_string, format=u"%a %b %d %H:%M:%S %Y"):
-    u'''
+def strptime(data_string, format="%a %b %d %H:%M:%S %Y"):
+    '''
     Parse the input and return date/time tuple, fractional seconds, and
     a format that matched the input.
     '''
 
     for index, arg in enumerate([data_string, format]):
-        if not isinstance(arg, unicode):
-            msg = u"strptime() argument {} must be str, not {}"
+        if not isinstance(arg, str):
+            msg = "strptime() argument {} must be str, not {}"
             raise TypeError(msg.format(index, type(arg)))
 
     _, rebuild, format_regex = to_regexp(format)
     found = format_regex.match(data_string)
     if not found:
-        raise ValueError(u"time data %r does not match format %r" %
+        raise ValueError("time data %r does not match format %r" %
                          (data_string, format))
     if len(data_string) != found.end():
-        raise ValueError(u"unconverted data remains: %s" %
+        raise ValueError("unconverted data remains: %s" %
                           data_string[found.end():])
 
     date_time, fraction = to_time_tuple(found.groupdict())
@@ -481,45 +478,45 @@ def strptime(data_string, format=u"%a %b %d %H:%M:%S %Y"):
 
 
 def _strip(fmt, to_write=DEFAULT_TO_WRITE):
-    u'''
+    '''
     Remove extensions from  a format, taking the first choice and including
     optional parts.
     '''
     choice = []
     for tok in tokenizer(fmt):
-        if tok == u'%(':
+        if tok == '%(':
             choice.append(0)
-        elif tok == u'%|':
+        elif tok == '%|':
             if not choice:
-                raise ValueError(u'Unexpected %| - must be within %(...%)')
+                raise ValueError('Unexpected %| - must be within %(...%)')
             choice[-1] += 1
-        elif tok == u'%)':
+        elif tok == '%)':
             try:
                 choice.pop()
             except IndexError:
-                raise ValueError(u'Unmatched %)')
-        elif tok == u'%?':
+                raise ValueError('Unmatched %)')
+        elif tok == '%?':
             pass
         else:
             if not any(choice):
                 yield to_write.get(tok, tok)
     if choice:
-        raise ValueError(u'Unmatched %(')
+        raise ValueError('Unmatched %(')
 
 
 def strip(fmt):
-    u'''
+    '''
     Remove extensions from  a format, taking the first choice and including
     optional parts.
     '''
-    if not u'(' in fmt and not u'!' in fmt:
+    if not '(' in fmt and not '!' in fmt:
         return fmt
     else:
-        return u''.join(_strip(fmt))
+        return ''.join(_strip(fmt))
 
 
 def _invert(fmt, to_regex=DEFAULT_TO_REGEX):
-    u'''
+    '''
     In general, add % where it's missing, and remove it where it's present.
     Actually, the implementation is a little smarter, only adding where it
     makes sense.
@@ -528,27 +525,27 @@ def _invert(fmt, to_regex=DEFAULT_TO_REGEX):
     n = len(fmt)
     while i < n:
         j = i + 1
-        if fmt[i] == u'%':
+        if fmt[i] == '%':
             j += 1
             if j > n:
-                raise ValueError(u'Missing token (nothing follows %)')
+                raise ValueError('Missing token (nothing follows %)')
             yield fmt[i+1]
-        elif fmt[i] == u'!':
+        elif fmt[i] == '!':
             j += 1
             if j > n:
-                raise ValueError(u'Missing token (nothing follows !)')
-            yield u'%' + fmt[i:j]
-        elif fmt[i] in u'(|)?':
-            yield u'%' + fmt[i]
-        elif u'%' + fmt[i] in to_regex:
-            yield u'%' + fmt[i]
+                raise ValueError('Missing token (nothing follows !)')
+            yield '%' + fmt[i:j]
+        elif fmt[i] in '(|)?':
+            yield '%' + fmt[i]
+        elif '%' + fmt[i] in to_regex:
+            yield '%' + fmt[i]
         else:
             yield fmt[i]
         i = j
 
 
 def invert(fmt, to_regex=DEFAULT_TO_REGEX):
-    u'''
+    '''
     Replace each character c by %c, if %c appears in `to_regex`.  The !
     character is considered as a prefix, so !x becomes %!x if it appears in
     `to_regex`.  The % character is an escape, so %y becomes y.
@@ -556,32 +553,32 @@ def invert(fmt, to_regex=DEFAULT_TO_REGEX):
     This effectively "inverts" a template, meaning that a template that
     would have been written as `T%(%H%!:%)%M` can be written as `%T(H!:)M`.
     '''
-    if isinstance(fmt, unicode):
-        return u''.join(_invert(fmt, to_regex))
+    if isinstance(fmt, str):
+        return ''.join(_invert(fmt, to_regex))
     else:
         return tuple(invert(f, to_regex) for f in fmt)
 
 
 def _auto_invert(fmt, log=None):
-    u'''
+    '''
     Apply `invert` automatically when needed.
     '''
 
-    if fmt is None or u'%' in fmt:
+    if fmt is None or '%' in fmt:
         return fmt
     else:
         inverted = invert(fmt)
         if log:
-            log(u'Inverted {0!r} to {1!r}', fmt, inverted)
+            log('Inverted {0!r} to {1!r}', fmt, inverted)
         return inverted
 
 
 def auto_invert(fmt, log=None):
-    u'''
+    '''
     Apply `invert` automatically when needed (handling tuples).
     '''
-    if fmt is None or isinstance(fmt, unicode):
+    if fmt is None or isinstance(fmt, str):
         return _auto_invert(fmt, log)
     else:
-        return tuple(imap(lambda f: _auto_invert(f, log), fmt))
+        return tuple(map(lambda f: _auto_invert(f, log), fmt))
 

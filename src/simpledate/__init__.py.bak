@@ -1,5 +1,4 @@
 
-from __future__ import division
 from calendar import timegm
 import datetime as dt
 from itertools import islice
@@ -9,7 +8,6 @@ from tzlocal import get_localzone
 from pytz import timezone, country_timezones, all_timezones, FixedOffset, utc, NonExistentTimeError, common_timezones, UTC
 from simpledate.fmt import strptime, reconstruct, strip, invert, auto_invert
 from simpledate.utils import DebugLog, MRUSortedIterable, OrderedSet, set_kargs_only, always_tuple
-from itertools import imap
 
 
 # A wrapper around the datetime, pytz and tzlocal packages.
@@ -21,23 +19,23 @@ from itertools import imap
 
 # Build the various formats used by SimpleDateParser.
 
-RFC_2822 = EMAIL = (u'(!a!, ?)d! ?b! ?Y! H!:M(!:S)?(! !Z|! ?!z)?',)
-ISO_8601 = YMD = (invert(u'Y(!-?m(!-?d(( |%T)H!:?M(!:?S(.f)?)?)?)?)?(! ?(!Z|!z))?'),)
-MDY = (u'(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?!z)?',)
-DMY = (u'(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?!z)?',)
-ASN_1 = (u'b! d(! !H!:!M(!:!S)?)?! Y(! ?!Z|! ?!z)?', u'Y!m!d!H!M!S(!Z|!z)', u'!y!m!d!H!M!S(!Z|!z)')
+RFC_2822 = EMAIL = ('(!a!, ?)d! ?b! ?Y! H!:M(!:S)?(! !Z|! ?!z)?',)
+ISO_8601 = YMD = (invert('Y(!-?m(!-?d(( |%T)H!:?M(!:?S(.f)?)?)?)?)?(! ?(!Z|!z))?'),)
+MDY = ('(m!/d!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?!z)?',)
+DMY = ('(d!/m!/)?Y(! H!:M(!:S(.f)?)?)?(! !Z|! ?!z)?',)
+ASN_1 = ('b! d(! !H!:!M(!:!S)?)?! Y(! ?!Z|! ?!z)?', 'Y!m!d!H!M!S(!Z|!z)', '!y!m!d!H!M!S(!Z|!z)')
 
-DEFAULT_FORMAT = u'%Y-%m-%d %H:%M:%S.%f %Z'
+DEFAULT_FORMAT = '%Y-%m-%d %H:%M:%S.%f %Z'
 DEFAULT_FORMATS = ISO_8601 + RFC_2822 + ASN_1
 
 
 # ASN.1 alias for UTC
 
 class _Z(UTC.__class__):
-    def tzname(self, dt): return u'Z'
-    def __str__(self): return u'Z'
-    def __repr__(self): return u'Z'
-    def __repr__(self): return u'<Z>'
+    def tzname(self, dt): return 'Z'
+    def __str__(self): return 'Z'
+    def __repr__(self): return 'Z'
+    def __repr__(self): return '<Z>'
 
 Z = _Z()
 
@@ -46,7 +44,7 @@ Z = _Z()
 
 
 def reapply_tzinfo(datetime, is_dst):
-    u'''
+    '''
     Re-apply the timezone to the datetime.  This is what you might think
     pytz's normalize does, but it doesn't.  So this is like a normalize on
     steroids.  This fixes an issue where pytz's tzinfo gets stuck at the
@@ -59,7 +57,7 @@ def reapply_tzinfo(datetime, is_dst):
 
 
 def tzinfo_astimezone(tzinfo, datetime):
-    u'''
+    '''
     Set the timezone after conversion.
 
     :param tzinfo: The timezone we are targetting.
@@ -74,7 +72,7 @@ def tzinfo_astimezone(tzinfo, datetime):
 
 
 def tzinfo_tzname(tzinfo, datetime, is_dst):
-    u'''
+    '''
     Get the name for the timezone at this time, avoiding an error when not
     naive.
 
@@ -95,19 +93,19 @@ def tzinfo_tzname(tzinfo, datetime, is_dst):
             offset = tzinfo_utcoffset(tzinfo, datetime)
             # following from datetime %z formatting code
             if offset is not None:
-                sign = u'+'
+                sign = '+'
                 if offset.days < 0:
                     offset = -offset
-                    sign = u'-'
+                    sign = '-'
                 h, m = divmod(offset, dt.timedelta(hours=1))
-                assert not m % dt.timedelta(minutes=1), u"whole minute"
+                assert not m % dt.timedelta(minutes=1), "whole minute"
                 m //= dt.timedelta(minutes=1)
-                name = u'%c%02d%02d' % (sign, h, m)
+                name = '%c%02d%02d' % (sign, h, m)
         return name
 
 
 def tzinfo_utcoffset(tzinfo, datetime):
-    u'''
+    '''
     Get the UTC offset for the timezone at this time, avoiding an error when
     not naive.
 
@@ -122,7 +120,7 @@ def tzinfo_utcoffset(tzinfo, datetime):
 
 
 def tzinfo_localize(tzinfo, datetime, is_dst):
-    u'''
+    '''
     If is_dst is unsupported then ignore it.
 
     :param tzinfo: The tzinfo we are setting.
@@ -137,7 +135,7 @@ def tzinfo_localize(tzinfo, datetime, is_dst):
 
 
 def datetime_timestamp(datetime):
-    u'''
+    '''
     Equivalent to datetime.timestamp() for pre-3.3
     '''
     try:
@@ -152,7 +150,7 @@ def datetime_timestamp(datetime):
 
 
 def always_datetime(value):
-    u'''
+    '''
     :param value: The value to convert to datetime (datetime or SimpleDate).
     :return: A datetime.
     '''
@@ -163,7 +161,7 @@ def always_datetime(value):
 
 
 def names(cutoff, test, **kargs):
-    u'''
+    '''
     Given a set of named values, select those for which `test(value)` is True
     and then, if `cutoff` or more are found, return their names.
 
@@ -173,15 +171,15 @@ def names(cutoff, test, **kargs):
     :return: The names of values that match the test, if `cutoff` or more match,
              otherwise `None`.
     '''
-    defined = dict((name, value) for name, value in kargs.items() if test(value))
+    defined = {name: value for name, value in kargs.items() if test(value)}
     if len(defined) >= cutoff:
         return list(defined.keys())
     else:
         return None
 
 
-def test_all(test, *args): return all(imap(test, args))
-def test_any(test, *args): return any(imap(test, args))
+def test_all(test, *args): return all(map(test, args))
+def test_any(test, *args): return any(map(test, args))
 
 def is_none(value): return value is None
 def is_not_none(value): return value is not None
@@ -191,10 +189,8 @@ def is_int_or_none(value): return value is None or isinstance(value, int)
 def take(n, iterable): return islice(iterable, 0, n)
 
 
-def prefer(*countries, **_3to2kwargs):
-    if 'using' in _3to2kwargs: using = _3to2kwargs['using']; del _3to2kwargs['using']
-    else: using = set(country_timezones.keys())
-    u'''
+def prefer(*countries, using=set(country_timezones.keys())):
+    '''
     Pull some countries to the front of the list.  When used with
     `unsafe=True` this can help select the expected timezone.
 
@@ -207,10 +203,8 @@ def prefer(*countries, **_3to2kwargs):
     return codes
 
 
-def exclude(*countries, **_3to2kwargs):
-    if 'using' in _3to2kwargs: using = _3to2kwargs['using']; del _3to2kwargs['using']
-    else: using = set(country_timezones.keys())
-    u'''
+def exclude(*countries, using=set(country_timezones.keys())):
+    '''
     Drop some countries from the list.
 
     :param countries: The countries to prefer (in order).
@@ -225,20 +219,20 @@ def exclude(*countries, **_3to2kwargs):
 
 class SimpleDateError(Exception):
 
-    def __init__(self, template=u'', *args, **kargs):
-        u'''
+    def __init__(self, template='', *args, **kargs):
+        '''
         :param template: A message that can contain {0}-style formatting.
         :param args: Format arguments.
         :param kargs: Named format arguments.
         :return: A new instance of the exception.
         '''
-        super(SimpleDateError, self).__init__(template.format(*args, **kargs))
+        super().__init__(template.format(*args, **kargs))
 
 
 class PyTzFactoryError(SimpleDateError):
 
     def __init__(self, message, timezones, datetime, is_dst=False, country=None, unsafe=None):
-        u'''
+        '''
         :param message: A descriptive message.
         :param timezones: The timezones passed to the search method.
         :param datetime: The datetime passed to the search method.
@@ -246,11 +240,11 @@ class PyTzFactoryError(SimpleDateError):
         :param country: The country code passed to the search method.
         :param unsafe: The unsafe flag passed to the search method.
         '''
-        super(self.__class__, self).__init__(PyTzFactoryError.format(message, timezones, datetime, is_dst, country, unsafe))
+        super().__init__(PyTzFactoryError.format(message, timezones, datetime, is_dst, country, unsafe))
 
     @staticmethod
     def format(message, timezones, datetime, is_dst, country, unsafe):
-        u'''
+        '''
         :param message: A descriptive message.
         :param timezones: The timezones passed to the search method.
         :param datetime: The datetime passed to the search method.
@@ -259,15 +253,15 @@ class PyTzFactoryError(SimpleDateError):
         :param unsafe: The unsafe flag passed to the search method.
         '''
         if is_dst is None and country is None and unsafe is None:
-            return u'{0} (timezones={1!r}, datetime={2!r})'.format(message, timezones, datetime)
+            return '{0} (timezones={1!r}, datetime={2!r})'.format(message, timezones, datetime)
         else:
-            return u'{0} (timezones={1!r}, datetime={2!r}, is_dst={3!r}, country={4!r}, unsafe={5!r})'.format(message, timezones, datetime, is_dst, country, unsafe)
+            return '{0} (timezones={1!r}, datetime={2!r}, is_dst={3!r}, country={4!r}, unsafe={5!r})'.format(message, timezones, datetime, is_dst, country, unsafe)
 
 
 class NoTimezone(PyTzFactoryError):
 
     def __init__(self, timezones, datetime, is_dst, country, unsafe):
-        u'''
+        '''
         :param timezones: The timezones passed to the search method.
         :param datetime: The datetime passed to the search method.
         :param is_dst: The DST flag passed to the search method.
@@ -275,13 +269,13 @@ class NoTimezone(PyTzFactoryError):
         :param unsafe: The unsafe flag passed to the search method.
         '''
         # use a list for timezones so it looks different from tuples in docs
-        super(self.__class__, self).__init__(u'No timezone found', list(timezones), datetime, is_dst, country, unsafe)
+        super().__init__('No timezone found', list(timezones), datetime, is_dst, country, unsafe)
 
 
 class AmbiguousTimezone(PyTzFactoryError):
 
     def __init__(self, distinct, timezones, datetime, is_dst, country, unsafe):
-        u'''
+        '''
         :param distinct: The timezones found with distinct offsets..
         :param timezones: The timezones passed to the search method.
         :param datetime: The datetime passed to the search method.
@@ -289,24 +283,24 @@ class AmbiguousTimezone(PyTzFactoryError):
         :param country: The country code passed to the search method.
         :param unsafe: The unsafe flag passed to the search method.
         '''
-        super(self.__class__, self).__init__(u'{0} distinct timezones found: {1}'.format(len(distinct), u'; '.join(imap(repr, distinct))),
+        super().__init__('{0} distinct timezones found: {1}'.format(len(distinct), '; '.join(map(repr, distinct))),
                          timezones, datetime, is_dst, country, unsafe)
 
 
 class SingleInstantTzError(SimpleDateError):
-    u'''
+    '''
     An attempt was made to use a timezone defined only for one isolated
     instant in time in a more general way.  Typically, all you can do with
     times associated with such timezones is convert them to UTC.
     '''
 
     def __init__(self, tzinfo, datetime, other):
-        u'''
+        '''
         :param tzinfo: The offset and name.
         :param datetime: The time at which the timezone is defined.
         :param other: The time at which the timezone was used.
         '''
-        super(self.__class__, self).__init__(u'Attempted to use {0} (defined only for {1}) on {2}', tzinfo, datetime, other)
+        super().__init__('Attempted to use {0} (defined only for {1}) on {2}', tzinfo, datetime, other)
 
 
 
@@ -314,14 +308,14 @@ class SingleInstantTzError(SimpleDateError):
 
 
 class SingleInstantTz(dt.tzinfo):
-    u'''
+    '''
     A timezone valid only for one particular instant.
     '''
 
-    __slots__ = (u'__tz', u'__datetime')
+    __slots__ = ('__tz', '__datetime')
 
     def __init__(self, tzinfo, datetime, is_dst):
-        u'''
+        '''
         :param offset: The offset for the timezone (timedelta instance).
         :param name: The name of the timezone.
         :param datetime: The instant for which we know this is valid.
@@ -334,7 +328,7 @@ class SingleInstantTz(dt.tzinfo):
         self.__datetime = tzinfo_astimezone(utc, tzinfo_astimezone(self.__tz, datetime))
 
     def __check(self, method, datetime):
-        u'''
+        '''
         :param method: The method we want to call.
         :param datetime: The instant we want to use the timezone at.
         :return: The result from the method call, if the instant matches.
@@ -373,10 +367,10 @@ class SingleInstantTz(dt.tzinfo):
         return self.__check(lambda x:x, datetime)
 
     def __str__(self):
-        return unicode(self.__tz)
+        return str(self.__tz)
 
     def __repr__(self):
-        return u'{0}({1!r}, {2!r}, {3!r})'.format(self.__class__.__name__, self.__tz.utcoffset(self.__datetime), unicode(self.__tz), self.__datetime)
+        return '{0}({1!r}, {2!r}, {3!r})'.format(self.__class__.__name__, self.__tz.utcoffset(self.__datetime), str(self.__tz), self.__datetime)
 
     def localize(self, datetime, is_dst=False):
         datetime = self.__localize(datetime)
@@ -384,7 +378,7 @@ class SingleInstantTz(dt.tzinfo):
 
     def __localize(self, datetime):
         if datetime.tzinfo is not None:
-            raise ValueError(u'Not naive datetime (tzinfo is already set)')
+            raise ValueError('Not naive datetime (tzinfo is already set)')
         return datetime.replace(tzinfo=self)
 
     def normalize(self, datetime, is_dst=False):
@@ -392,12 +386,12 @@ class SingleInstantTz(dt.tzinfo):
 
     def __normalize(self, datetime, is_dst=False):
         if dt.tzinfo is None:
-            raise ValueError(u'Naive time - no tzinfo set')
+            raise ValueError('Naive time - no tzinfo set')
         return tzinfo_astimezone(self, datetime)
 
 
 class PyTzFactory(DebugLog):
-    u'''
+    '''
     Generate timezones (mainly from strings, but other formats are supported
     in places, too).
 
@@ -405,7 +399,7 @@ class PyTzFactory(DebugLog):
     '''
 
     def __init__(self, timezones=None, countries=None, debug=False):
-        u'''
+        '''
         :param timezones: The zones to search by default.
         :param countries: Countries to use by default (None implies all).
         :param debug: If true, display debug messages to stdout.
@@ -418,18 +412,8 @@ class PyTzFactory(DebugLog):
             timezones = timezones.intersection(self.expand_country(*countries, debug=debug))
         self.__sorted_zones = MRUSortedIterable(timezones)
 
-    def search(self, *timezones, **_3to2kwargs):
-        if 'debug' in _3to2kwargs: debug = _3to2kwargs['debug']; del _3to2kwargs['debug']
-        else: debug = False
-        if 'unsafe' in _3to2kwargs: unsafe = _3to2kwargs['unsafe']; del _3to2kwargs['unsafe']
-        else: unsafe = False
-        if 'country' in _3to2kwargs: country = _3to2kwargs['country']; del _3to2kwargs['country']
-        else: country = None
-        if 'is_dst' in _3to2kwargs: is_dst = _3to2kwargs['is_dst']; del _3to2kwargs['is_dst']
-        else: is_dst = False
-        if 'datetime' in _3to2kwargs: datetime = _3to2kwargs['datetime']; del _3to2kwargs['datetime']
-        else: datetime = None
-        u'''
+    def search(self, *timezones, datetime=None, is_dst=False, country=None, unsafe=False, debug=False):
+        '''
         Find a single timezone consistent with the parameters given.
 
         To get a timezone for a given date:
@@ -480,7 +464,7 @@ class PyTzFactory(DebugLog):
 
         log = self._get_log(debug)
         datetime = always_datetime(datetime)
-        log(PyTzFactoryError.format(u'Searching', timezones, datetime, is_dst, country, unsafe))
+        log(PyTzFactoryError.format('Searching', timezones, datetime, is_dst, country, unsafe))
 
         # either start with the timezones by country or 'everything' (None).
         if country is None:
@@ -502,8 +486,8 @@ class PyTzFactory(DebugLog):
         # single instant timezone.  so there can be no ambiguity here.
         if unsafe:
             try:
-                found = known.next()
-                log(u'Found (unsafe) {0}', found)
+                found = next(known)
+                log('Found (unsafe) {0}', found)
                 return SingleInstantTz(found, datetime, is_dst)
             except StopIteration:
                 raise NoTimezone(timezones, datetime, is_dst, country, unsafe)
@@ -517,20 +501,20 @@ class PyTzFactory(DebugLog):
                 raise NoTimezone(timezones, datetime, is_dst, country, unsafe)
             elif len(known) == 1:
                 found = known[0]
-                log(u'Found {0}', found)
+                log('Found {0}', found)
                 return found
             else:
                 distinct = list(self.distinct(known, datetime=datetime, debug=debug))
-                log(u'Have {0} distinct timezone(s)', len(distinct))
+                log('Have {0} distinct timezone(s)', len(distinct))
                 if len(distinct) == 1:
-                    found = iter(distinct).next()
-                    log(u'Found {0}', found)
+                    found = next(iter(distinct))
+                    log('Found {0}', found)
                     return SingleInstantTz(found, datetime, is_dst)
                 else:
                     raise AmbiguousTimezone(distinct, timezones, datetime, is_dst, country, unsafe)
 
     def distinct(self, timezones, datetime=None, debug=False):
-        u'''
+        '''
         :param timezones: Timezones to filter
         :param datetime: The date at which we are evaluating timezones.
         :param debug: Print an explanation of the process followed to stdout?
@@ -542,33 +526,25 @@ class PyTzFactory(DebugLog):
 
         for tz in timezones:
             if datetime is None:
-                log(u'Allowing single timezone without datetime: {0}', tz)
+                log('Allowing single timezone without datetime: {0}', tz)
                 # this is a little tricksy, but allows us to handle a single
                 # timezone (which is distinct by definition)
                 if not offsets:
                     yield tz
                 else:
-                    raise SimpleDateError(u'Need datetime to filter multiple timezones')
+                    raise SimpleDateError('Need datetime to filter multiple timezones')
                 offsets.add(object())
             else:
                 offset = tzinfo_utcoffset(tz, datetime)
                 if offset not in offsets:
-                    log(u'New offset {0} for {1}', offset, tz)
+                    log('New offset {0} for {1}', offset, tz)
                     yield tz
                     offsets.add(offset)
                 else:
-                    log(u'Known offset {0} for {1}', offset, tz)
+                    log('Known offset {0} for {1}', offset, tz)
 
-    def expand_tz(self, *timezones, **_3to2kwargs):
-        if 'debug' in _3to2kwargs: debug = _3to2kwargs['debug']; del _3to2kwargs['debug']
-        else: debug = False
-        if 'is_dst' in _3to2kwargs: is_dst = _3to2kwargs['is_dst']; del _3to2kwargs['is_dst']
-        else: is_dst = False
-        if 'datetime' in _3to2kwargs: datetime = _3to2kwargs['datetime']; del _3to2kwargs['datetime']
-        else: datetime = None
-        if 'known' in _3to2kwargs: known = _3to2kwargs['known']; del _3to2kwargs['known']
-        else: known = None
-        u'''
+    def expand_tz(self, *timezones, known=None, datetime=None, is_dst=False, debug=False):
+        '''
         For each timezone in turn, search for possible tzinfo instances within
         the `known` set.  If the timezone is a tuple then each value in the
         tuple is separately expanded.  So, for example, if called as
@@ -594,8 +570,7 @@ class PyTzFactory(DebugLog):
 
         log = self._get_log(debug)
         datetime = always_datetime(datetime)
-
-        non_local = { 'count' : 0 }
+        expand_tz.count = 0
 
         if known is None:
             known_set = None
@@ -605,7 +580,7 @@ class PyTzFactory(DebugLog):
                 known_sorted = tuple()
         else:
             if not known:
-                log(u'No known zones for {0!r}', timezones)
+                log('No known zones for {0!r}', timezones)
                 return
             else:
                 known_set = known
@@ -615,73 +590,71 @@ class PyTzFactory(DebugLog):
             #nonlocal count
             # filter against `known`, if it exists.
             if known_set is None or tzinfo in known_set:
-                log(u'{0}: found {1}', message, tzinfo)
-                non_local['count'] += 1
+                log('{0}: found {1}', message, tzinfo)
+                expand_tz.count += 1
                 yield tzinfo
             else:
-                log(u'{0}: excluding {1}', message, tzinfo)
+                log('{0}: excluding {1}', message, tzinfo)
 
-        log(u'Expanding {0!r}', timezones)
+        log('Expanding {0!r}', timezones)
         for tz in timezones:
 
             if tz is None:
                 # yield from check('Locale', get_localzone())
-                for tzinfo in check(u'Locale', get_localzone()): yield tzinfo
+                for tzinfo in check('Locale', get_localzone()): yield tzinfo
                 continue
 
             if isinstance(tz, dt.tzinfo):
                 # yield from check('Direct', tz)
-                for tzinfo in check(u'Direct', tz): yield tzinfo
+                for tzinfo in check('Direct', tz): yield tzinfo
                 continue
 
             if isinstance(tz, dt.timedelta):
-                log(u'Converting {0} to minutes', tz)
+                log('Converting {0} to minutes', tz)
                 seconds = tz.total_seconds()
                 if seconds % 60:
-                    raise PyTzFactoryError(u'Time difference not a round number of minutes (%s)' % tz, timezones, datetime, is_dst)
+                    raise PyTzFactoryError('Time difference not a round number of minutes (%s)' % tz, timezones, datetime, is_dst)
                 tz = seconds / 60
                 # falls through to next section
 
             if isinstance(tz, int) or isinstance(tz, float):
-                log(u'Assuming {0} is minutes', tz)
+                log('Assuming {0} is minutes', tz)
                 # yield from check('Fixed offset', FixedOffset(tz))
-                for tzinfo in check(u'Fixed offset', FixedOffset(tz)): yield tzinfo
+                for tzinfo in check('Fixed offset', FixedOffset(tz)): yield tzinfo
                 continue
 
-            if isinstance(tz, unicode):
+            if isinstance(tz, str):
                 try:
                     # yield from check('Name', timezone(tz))
-                    for tzinfo in check(u'Name', timezone(tz)): yield tzinfo
+                    for tzinfo in check('Name', timezone(tz)): yield tzinfo
                     # continue to next stage if GMT, EST or similar
-                    if datetime is None or u'/' in tz:
+                    if datetime is None or '/' in tz:
                         continue
                 except KeyError:
-                    log(u'Name lookup failed for {0}', tz)
+                    log('Name lookup failed for {0}', tz)
 
-            if isinstance(tz, unicode):
+            if isinstance(tz, str):
                 if datetime is None:
-                    raise PyTzFactoryError(u'Cannot expand limited timezone without datetime', timezones, datetime, is_dst)
+                    raise PyTzFactoryError('Cannot expand limited timezone without datetime', timezones, datetime, is_dst)
                 for tzinfo in known_sorted:
                     try:
                         name = tzinfo_tzname(tzinfo, datetime, is_dst)
                         if tz == name:
-                            log(u'Found {0} using {1}', tz, tzinfo)
-                            non_local['count'] += 1
+                            log('Found {0} using {1}', tz, tzinfo)
+                            expand_tz.count += 1
                             yield tzinfo
                         else:
-                            log(u'{0} gave {1}', tzinfo, name)
-                    except NonExistentTimeError, e:
-                        log(u'{0} / {1} ({2}) gave {3!r}', tz, datetime, is_dst, e)
+                            log('{0} gave {1}', tzinfo, name)
+                    except NonExistentTimeError as e:
+                        log('{0} / {1} ({2}) gave {3!r}', tz, datetime, is_dst, e)
                 continue
 
-            raise PyTzFactoryError(u'Cannot expand timezone {0!r}'.format(tz), timezones, datetime, is_dst)
+            raise PyTzFactoryError('Cannot expand timezone {0!r}'.format(tz), timezones, datetime, is_dst)
 
-        log(u'Expanded timezone to {0} timezones', non_local['count'])
+        log('Expanded timezone to {0} timezones', expand_tz.count)
 
-    def expand_country(self, *countries, **_3to2kwargs):
-        if 'debug' in _3to2kwargs: debug = _3to2kwargs['debug']; del _3to2kwargs['debug']
-        else: debug = False
-        u'''
+    def expand_country(self, *countries, debug=False):
+        '''
         :param countries: Zero or more country codes.
         :param debug: Print an explanation of the process followed to stdout?
         :return: A sequence of timezones for the countries given.
@@ -689,19 +662,19 @@ class PyTzFactory(DebugLog):
         log = self._get_log(debug)
         count = 0
         for country in countries:
-            log(u'Have country code {0}', country)
+            log('Have country code {0}', country)
             zones = country_timezones[country]
-            log(u'Country code {0} has {1} timezones', country, len(zones))
+            log('Country code {0} has {1} timezones', country, len(zones))
             # yield from map(timezone, zones)
-            for tzinfo in imap(timezone, zones): yield tzinfo
+            for tzinfo in map(timezone, zones): yield tzinfo
             count += len(zones)
-        log(u'Expanded country codes to {0} timezones', count)
+        log('Expanded country codes to {0} timezones', count)
 
 DEFAULT_TZ_FACTORY = PyTzFactory()
 
 
 class SimpleDateParser(DebugLog):
-    u'''
+    '''
     Automate the parsing of SimpleDate instances from strings using a series
     of formats (until one works).
 
@@ -709,13 +682,13 @@ class SimpleDateParser(DebugLog):
     '''
 
     def __init__(self, formats=DEFAULT_FORMATS):
-        formats = tuple(imap(auto_invert, always_tuple(formats)))
+        formats = tuple(map(auto_invert, always_tuple(formats)))
         self._formats = MRUSortedIterable(formats)
 
     def parse(self, date,
               tz=None, is_dst=False, country=None, tz_factory=DEFAULT_TZ_FACTORY,
               unsafe=False, debug=False):
-        u'''
+        '''
         Attempt to parse the string `date` using each format in turn, until
         success.  Once a parse succeeds, find the `dt.tzinfo` instance that is
         associated with the parse data (and/or supplied value, which must
@@ -742,42 +715,42 @@ class SimpleDateParser(DebugLog):
             try:
 
                 tt, fraction, write_fmt = strptime(date, read_fmt)
-                log(u'Raw parse results for {0}: {1!r}, {2!r}', read_fmt, tt, fraction)
+                log('Raw parse results for {0}: {1!r}, {2!r}', read_fmt, tt, fraction)
                 datetime = dt.datetime(*(tt[:6] + (fraction,)))
 
                 zone = tt[-2]
                 if zone is not None:
-                    log(u'Parsed timezone name from date as {0}', zone)
+                    log('Parsed timezone name from date as {0}', zone)
                 elif tt[-1]:
                         zone = dt.timedelta(seconds=tt[-1])
-                        log(u'Parsed timezone offset from date as {0}', zone)
+                        log('Parsed timezone offset from date as {0}', zone)
 
                 zones = ()
                 if zone is not None: zones += (zone,)
                 if tz is not None: zones += (tz,)
                 if not zones: zones += (None,)  # use locale
-                log(u'Combined zones are {0}', zones)
+                log('Combined zones are {0}', zones)
 
                 tzinfo = tz_factory.search(*zones, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
-                log(u'Resolved timezone as {0}', tzinfo)
+                log('Resolved timezone as {0}', tzinfo)
 
                 datetime = tzinfo_localize(tzinfo, datetime, is_dst)
-                log(u'Parsed {0} with {1} to give {2} / {3}', date, read_fmt, datetime, tzinfo)
+                log('Parsed {0} with {1} to give {2} / {3}', date, read_fmt, datetime, tzinfo)
                 return datetime, read_fmt, write_fmt
 
-            except ValueError, e:
-                log(u'Failed to parse {0} with {1} ({2})', date, read_fmt, e)
-        raise SimpleDateError(u'Could not parse {0}', date)
+            except ValueError as e:
+                log('Failed to parse {0} with {1} ({2})', date, read_fmt, e)
+        raise SimpleDateError('Could not parse {0}', date)
 
 DEFAULT_DATE_PARSER = SimpleDateParser()
 
 
-class DateTimeWrapper(object):
-    u'''
+class DateTimeWrapper:
+    '''
     Provide consistent, attribute-based access to a datetime instances.
     '''
 
-    __slots__ = (u'__datetime', u'__format')
+    __slots__ = ('__datetime', '__format')
 
     def __init__(self, datetime, format):
         self.__datetime = datetime
@@ -857,9 +830,9 @@ class DateTimeWrapper(object):
 
     def __repr__(self):
         if isinstance(self.__datetime.tzinfo, SingleInstantTz):
-            return u'{0}({1!r})'.format(self.__class__.__name__, unicode(self))
+            return '{0}({1!r})'.format(self.__class__.__name__, str(self))
         else:
-            return u'{0}({1!r}, tz={2!r})'.format(self.__class__.__name__, unicode(self), unicode(self.__datetime.tzinfo))
+            return '{0}({1!r}, tz={2!r})'.format(self.__class__.__name__, str(self), str(self.__datetime.tzinfo))
 
     def strftime(self, format):
         return self.__datetime.strftime(auto_invert(format))
@@ -907,7 +880,7 @@ class DateTimeWrapper(object):
 
 
 def single_format(format):
-    u'''
+    '''
     The SimpleDate constructor supports both a single format and a list.  If
     we have multiple values then we don't use it to set the write format.
     This function embodies that logic - it returns a format only if a unique
@@ -921,7 +894,7 @@ def single_format(format):
 
 
 class SimpleDate(DateTimeWrapper, DebugLog):
-    u'''
+    '''
     A formatted date and time, associated with a timezone.
     '''
 
@@ -931,7 +904,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                  simple=None, datetime=None, date=None, ordinal=None, time=None, timestamp=None,
                  tz=None, is_dst=False, country=None, tz_factory=DEFAULT_TZ_FACTORY, unsafe=False,
                  format=None, date_parser=None, debug=False):
-        u'''
+        '''
         Simple use may only require passing the first parameter, which will
         be interpreted according to its type: a string will be parsed, while
         other types behave like setting the equivalent parameter.  So passing
@@ -1028,37 +1001,37 @@ class SimpleDate(DateTimeWrapper, DebugLog):
 
         if test_all(is_none, month, day, hour, minute, second, microsecond,
                 simple, time, date, datetime, timestamp, ordinal):
-            log(u'Inferring auto argument')
+            log('Inferring auto argument')
             if isinstance(year_or_auto, SimpleDate):
-                log(u'Found a DTime instance')
+                log('Found a DTime instance')
                 simple, year_or_auto = year_or_auto, None
             # ordering important here as issubclass(datetime, date)
             elif isinstance(year_or_auto, dt.datetime):
-                log(u'Found a datetime instance')
+                log('Found a datetime instance')
                 datetime, year_or_auto = year_or_auto, None
             elif isinstance(year_or_auto, dt.date):
-                log(u'Found a date instance')
+                log('Found a date instance')
                 date, year_or_auto = year_or_auto, None
             elif isinstance(year_or_auto, dt.time):
-                log(u'Found a time instance')
+                log('Found a time instance')
                 time, year_or_auto = year_or_auto, None
             elif isinstance(year_or_auto, int) or isinstance(year_or_auto, float):
-                log(u'Found a numeric value, will use as Unix epoch')
+                log('Found a numeric value, will use as Unix epoch')
                 timestamp, year_or_auto = year_or_auto, None
-            elif isinstance(year_or_auto, unicode):
+            elif isinstance(year_or_auto, str):
                 # if we have a string, use `date_parser` to create a SimpleDate
                 # instance (passing `tz`, `format`, etc) and then clear
                 # everything else.
-                log(u'Found a string, will try to parse')
+                log('Found a string, will try to parse')
                 if date_parser is None:
                     if format:
-                        log(u'Creating date parser with given format plus defaults')
+                        log('Creating date parser with given format plus defaults')
                         date_parser = SimpleDateParser(always_tuple(format) + DEFAULT_FORMATS)
                     else:
-                        log(u'Using default date parser')
+                        log('Using default date parser')
                         date_parser = DEFAULT_DATE_PARSER
                 else:
-                    log(u'Using given date parser')
+                    log('Using given date parser')
                 datetime, read_fmt, write_fmt = date_parser.parse(year_or_auto, tz=tz, is_dst=is_dst, country=country, tz_factory=tz_factory, unsafe=unsafe, debug=debug)
                 year_or_auto, tz = None, None  # clear tz so it's not re-checked later
                 # if someone supplied a single format, always use it for writes.
@@ -1071,9 +1044,9 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                         format = write_fmt
                     else:
                         format = strip(format)
-                        log(u'Format was not used to parse, so strip to {0}', format)
+                        log('Format was not used to parse, so strip to {0}', format)
             elif year_or_auto is not None:
-                raise SimpleDateError(u'Cannot convert {0!r} for year_or_auto', year_or_auto)
+                raise SimpleDateError('Cannot convert {0!r} for year_or_auto', year_or_auto)
 
         # so now the 'auto' parameter has been converted and we can address
         # the different cases the constructor handles in turn.
@@ -1091,7 +1064,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
             # to next case below (combining with time).
             if date is None and ordinal is not None:
                 date = dt.date.fromordinal(ordinal)
-                log(u'Converted ordinal {0} to date {1}', ordinal, date)
+                log('Converted ordinal {0} to date {1}', ordinal, date)
                 ordinal = None
 
             # special case - combine date and/or time into datetime
@@ -1102,29 +1075,29 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                     # we know date is defined, so use a zero time in the
                     # datetime to bootstrap the tz
                     tzinfo = tz_factory.search(tz, datetime=dt.datetime.combine(date, dt.time()), is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
-                    log(u'Have a date, but no time, so using midnight in {0}', tzinfo)
+                    log('Have a date, but no time, so using midnight in {0}', tzinfo)
                     time = dt.time(tzinfo=tzinfo)
                 elif time.tzinfo is None:
                     # similarly, fix a naive time (TODO - we use today's UTC date - that may not be right?)
                     tzinfo = tz_factory.search(tz, datetime=dt.datetime.combine(dt.datetime.utcnow().date(), time), is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
-                    log(u'Setting timezone for time to {0}', tzinfo)
+                    log('Setting timezone for time to {0}', tzinfo)
                     time = time.replace(tzinfo=tzinfo)
                 # so now we have a time that is guaranteed to exist and have
                 # a valid tzinfo
                 if date is None:
-                    log(u'Have a time, but no date, so using today')
+                    log('Have a time, but no date, so using today')
                     date = dt.datetime.now(tz=time.tzinfo).date()
-                log(u'Combining date and time')
+                log('Combining date and time')
                 datetime = reapply_tzinfo(dt.datetime.combine(date, time), is_dst)
                 date, time = None, None
 
             # move simple to datetime here so that we can check tz below
             if simple is not None:
                 datetime = simple.datetime
-                log(u'Using datetime from simple: {0}', datetime)
+                log('Using datetime from simple: {0}', datetime)
                 if not format:
                     format = simple.format
-                    log(u'Using format from simple: {0}', format)
+                    log('Using format from simple: {0}', format)
                 simple = None
 
             # with the special cases handled (and reduced to a single
@@ -1133,9 +1106,9 @@ class SimpleDate(DateTimeWrapper, DebugLog):
 
             multiple = names(2, is_not_none, simple=simple, time=time, date=date, datetime=datetime, epoch=timestamp)
             if multiple:
-                args = u', '.join(multiple)
-                log(u'Too many, possibly contradicting, values: {0}', args)
-                raise SimpleDateError(u'Cannot specify ' + args + u' together')
+                args = ', '.join(multiple)
+                log('Too many, possibly contradicting, values: {0}', args)
+                raise SimpleDateError('Cannot specify ' + args + ' together')
 
             # pick off the remaining parameters, one by one.
 
@@ -1144,19 +1117,19 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                 # parameters is consistent with the explicit value
                 tz_factory.search(datetime.tzinfo, tz, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
             elif time is not None:
-                raise SimpleDateError(u'Inconsistent code: time should already have been converted')
+                raise SimpleDateError('Inconsistent code: time should already have been converted')
             elif date is not None:
-                raise SimpleDateError(u'Inconsistent code: date should already have been converted')
+                raise SimpleDateError('Inconsistent code: date should already have been converted')
             elif timestamp is not None:
-                log(u'Converting Unix epoch to datetime')
+                log('Converting Unix epoch to datetime')
                 datetime = dt.datetime.fromtimestamp(timestamp, tz=utc)
                 tzinfo = tz_factory.search(tz, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
                 datetime, timestamp = dt.datetime.fromtimestamp(timestamp, tz=tzinfo), None
                 datetime.replace(tzinfo=tzinfo)
             elif ordinal is not None:
-                raise SimpleDateError(u'Inconsistent code: ordinal should already have been converted')
+                raise SimpleDateError('Inconsistent code: ordinal should already have been converted')
             elif datetime is None:
-                log(u'Constructing a new datetime using now')
+                log('Constructing a new datetime using now')
                 datetime = dt.datetime.utcnow().replace(tzinfo=utc)
                 tzinfo = tz_factory.search(tz, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
                 datetime = datetime.astimezone(tzinfo)
@@ -1172,28 +1145,28 @@ class SimpleDate(DateTimeWrapper, DebugLog):
             extra = names(1, is_not_none, simple=simple, date=date, ordinal=ordinal, time=time, timstamp=timestamp, datetime=datetime)
             if extra:
                 if isinstance(year_or_auto, int):
-                    raise SimpleDateError(u'Cannot mix {0} with year.',  u', '.join(extra))
+                    raise SimpleDateError('Cannot mix {0} with year.',  ', '.join(extra))
                 else:
-                    raise SimpleDateError(u'Name multiple parameters if they are not year, month, day etc.')
+                    raise SimpleDateError('Name multiple parameters if they are not year, month, day etc.')
 
-            log(u'Constructor was called with explicit year, month, day, etc.')
+            log('Constructor was called with explicit year, month, day, etc.')
             if test_any(is_none, year_or_auto, month, day):
                 if test_all(is_int_or_none, year_or_auto, month, day):
-                    raise SimpleDateError(u'The year, month and day must all be provided')
+                    raise SimpleDateError('The year, month and day must all be provided')
                 else:
-                    raise SimpleDateError(u'Name multiple parameters if they are not year, month, day etc.')
+                    raise SimpleDateError('Name multiple parameters if they are not year, month, day etc.')
 
-            spec = OrderedDict([(u'microsecond', microsecond), (u'second', second), (u'minute', minute),
-                                (u'hour', hour), (u'day', day), (u'month', month), (u'year', year_or_auto)])
+            spec = OrderedDict([('microsecond', microsecond), ('second', second), ('minute', minute),
+                                ('hour', hour), ('day', day), ('month', month), ('year', year_or_auto)])
             for name, value in spec.items():
                 if value is None:
-                    log(u'Default ' + name + u' to zero')
+                    log('Default ' + name + ' to zero')
                     spec[name] = 0
                 else: break  # don't allow gaps
             error = names(1, is_none, **spec)
-            if error: raise SimpleDateError(u'Missing value{0} for {1}', u's' if len(error) > 1 else u'', u', '.join(error))
+            if error: raise SimpleDateError('Missing value{0} for {1}', 's' if len(error) > 1 else '', ', '.join(error))
 
-            log(u'Constructing datetime from: {0}', u'; '.join(u'%s: %s' % (name, value) for name, value in reversed(list(spec.items()))))
+            log('Constructing datetime from: {0}', '; '.join('%s: %s' % (name, value) for name, value in reversed(list(spec.items()))))
             datetime = dt.datetime(**spec)
             year_or_auto, month, day, hour, minute, second, microsecond = None, None, None, None, None, None ,None
 
@@ -1205,8 +1178,8 @@ class SimpleDate(DateTimeWrapper, DebugLog):
                       year_or_auto=year_or_auto, month=month, day=day,
                       hour=hour, minute=minute, second=second, microsecond=microsecond,
                       simple=simple, time=time, date=date, epoch=timestamp)
-        if error: raise SimpleDateError(u'Inconsistent code: {0} unprocessed', u', '.join(error))
-        if datetime is None: raise SimpleDateError(u'Inconsistent code: no datetime')
+        if error: raise SimpleDateError('Inconsistent code: {0} unprocessed', ', '.join(error))
+        if datetime is None: raise SimpleDateError('Inconsistent code: no datetime')
 
         if datetime.tzinfo is None:
             tzinfo = tz_factory.search(tz, datetime=datetime, is_dst=is_dst, country=country, unsafe=unsafe, debug=debug)
@@ -1214,11 +1187,11 @@ class SimpleDate(DateTimeWrapper, DebugLog):
 
         format = single_format(format)
         if not format:
-            log(u'Using default format ({0})', DEFAULT_FORMAT)
+            log('Using default format ({0})', DEFAULT_FORMAT)
             format = DEFAULT_FORMAT
-        super(self.__class__, self).__init__(datetime, format)
+        super().__init__(datetime, format)
 
-        log(u'Created {0}', self)
+        log('Created {0}', self)
 
     def convert(self, tz=None, format=None, is_dst=False, country=None, tz_factory=DEFAULT_TZ_FACTORY, unsafe=False, debug=False):
         if tz is None and country is None:
@@ -1252,7 +1225,7 @@ class SimpleDate(DateTimeWrapper, DebugLog):
 FACTORIES = local()
 
 def get_local(name, builder):
-    u'''
+    '''
     Helper for thread local data.
 
     :param name: The name of the attribute to get.
@@ -1266,17 +1239,17 @@ def get_local(name, builder):
     return value
 
 def best_guess_utc(date, debug=False):
-    u'''
+    '''
     Try US timezones with US formats, then everything else.
 
     :param date: A date to parse.
     :param debug: If true, print a description of the logic followed.
     :return: A UTC datetime.
     '''
-    us_date_parser = get_local(u'us_date_parser', lambda: SimpleDateParser(MDY + DEFAULT_FORMATS))
-    eu_date_parser = get_local(u'eu_date_parser', lambda: SimpleDateParser(DMY + DEFAULT_FORMATS))
-    us_tz_factory = get_local(u'us_tz_factory', lambda: PyTzFactory(all_timezones, countries=[u'US']))
-    eu_tz_factory = get_local(u'eu_tz_factory', lambda: PyTzFactory(all_timezones, countries=exclude(u'US')))
+    us_date_parser = get_local('us_date_parser', lambda: SimpleDateParser(MDY + DEFAULT_FORMATS))
+    eu_date_parser = get_local('eu_date_parser', lambda: SimpleDateParser(DMY + DEFAULT_FORMATS))
+    us_tz_factory = get_local('us_tz_factory', lambda: PyTzFactory(all_timezones, countries=['US']))
+    eu_tz_factory = get_local('eu_tz_factory', lambda: PyTzFactory(all_timezones, countries=exclude('US')))
     try:
         date = SimpleDate(date, date_parser=us_date_parser, tz_factory=us_tz_factory, unsafe=True, debug=debug)
     except SimpleDateError:

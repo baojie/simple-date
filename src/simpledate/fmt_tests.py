@@ -9,27 +9,27 @@ class RegexpTest(TestCase):
 
     def test_marker(self):
         # shows we can use an empty pattern to mark which option is matched
-        rx = compile(r'(?P<a1>)x')
-        m = rx.match('x')
-        assert m, 'no match'
-        assert 'a1' in m.groupdict(), m.groupdict()
-        assert m.groupdict()['a1'] is not None, m.groupdict()['a1']
-        rx = compile(r'((?P<a>)a|b)')
-        m = rx.match('a')
-        assert m, 'no match'
-        assert 'a' in m.groupdict(), m.groupdict()
-        assert m.groupdict()['a'] is not None, m.groupdict()['a']
-        m = rx.match('b')
-        assert m, 'no match'
-        assert 'a' in m.groupdict(), m.groupdict()
-        assert m.groupdict()['a'] is None, m.groupdict()['a']
-        rx = compile(r'((?P<a>)a|(?P<b>)b)')
-        m = rx.match('b')
-        assert m, 'no match'
-        assert 'a' in m.groupdict(), m.groupdict()
-        assert m.groupdict()['a'] is None, m.groupdict()['a']
-        assert 'b' in m.groupdict(), m.groupdict()
-        assert m.groupdict()['b'] is not None, m.groupdict()['b']
+        rx = compile(ur'(?P<a1>)x')
+        m = rx.match(u'x')
+        assert m, u'no match'
+        assert u'a1' in m.groupdict(), m.groupdict()
+        assert m.groupdict()[u'a1'] is not None, m.groupdict()[u'a1']
+        rx = compile(ur'((?P<a>)a|b)')
+        m = rx.match(u'a')
+        assert m, u'no match'
+        assert u'a' in m.groupdict(), m.groupdict()
+        assert m.groupdict()[u'a'] is not None, m.groupdict()[u'a']
+        m = rx.match(u'b')
+        assert m, u'no match'
+        assert u'a' in m.groupdict(), m.groupdict()
+        assert m.groupdict()[u'a'] is None, m.groupdict()[u'a']
+        rx = compile(ur'((?P<a>)a|(?P<b>)b)')
+        m = rx.match(u'b')
+        assert m, u'no match'
+        assert u'a' in m.groupdict(), m.groupdict()
+        assert m.groupdict()[u'a'] is None, m.groupdict()[u'a']
+        assert u'b' in m.groupdict(), m.groupdict()
+        assert m.groupdict()[u'b'] is not None, m.groupdict()[u'b']
 
 
 class ParserTest(TestCase):
@@ -39,15 +39,15 @@ class ParserTest(TestCase):
         assert target == result, result
 
     def test_regexp(self):
-        self.assert_regexp('abc', 'abc', {})
-        self.assert_regexp('abXc', 'ab%xc', {'%x': 'X'})
-        self.assert_regexp('ab((?P<G1>)X)c', 'ab{%x}c', {'%x': 'X'})
-        self.assert_regexp('a((?P<G1>)b)?c', 'ab?c', {})
-        self.assert_regexp('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', '{%H:!}%M', DEFAULT_SUBSTITUTIONS)
+        self.assert_regexp(u'abc', u'abc', {})
+        self.assert_regexp(u'abXc', u'ab%xc', {u'%x': u'X'})
+        self.assert_regexp(u'ab((?P<G1>)X)c', u'ab{%x}c', {u'%x': u'X'})
+        self.assert_regexp(u'a((?P<G1>)b)?c', u'ab?c', {})
+        self.assert_regexp(u'((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', u'{%H:!}%M', DEFAULT_SUBSTITUTIONS)
 
     def test_subs(self):
-        self.assert_regexp(r'(?P<Y>\d\d\d\d)-(?P<m>1[0-2]|0[1-9]|[1-9])-(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])', '%Y-%m-%d', None)
-        self.assert_regexp(r'((?P<G1>)(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9]))?', '%d?', None)
+        self.assert_regexp(ur'(?P<Y>\d\d\d\d)-(?P<m>1[0-2]|0[1-9]|[1-9])-(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9])', u'%Y-%m-%d', None)
+        self.assert_regexp(ur'((?P<G1>)(?P<d>3[0-1]|[1-2]\d|0[1-9]|[1-9]| [1-9]))?', u'%d?', None)
 
     def assert_parser(self, target_regexp, target_rebuild, expr, subs):
         regexp, rebuild, _ = _to_regexp(expr, subs)
@@ -55,13 +55,13 @@ class ParserTest(TestCase):
         assert target_rebuild == rebuild, rebuild
 
     def test_parser(self):
-        self.assert_parser('abc', {'G0': 'abc'}, 'abc', {})
-        self.assert_parser('aBc', {'G0': 'a%bc'}, 'a%!bc', {'%!b': 'B'})
-        self.assert_parser('ab((?P<G1>)xyz)c', {'G0': 'ab%G1%c', 'G1': 'xyz'}, 'ab%(xyz%)c', HIDE_CHOICES)
-        self.assert_parser('ab((?P<G1>)xy|(?P<G2>)z)c', {'G0': 'ab%G1%%G2%c', 'G1': 'xy', 'G2': 'z'}, 'ab%(xy%|z%)c', HIDE_CHOICES)
-        self.assert_parser('ab((?P<G1>)c)?', {'G0': 'ab%G1%', 'G1': 'c'}, 'abc%?', DEFAULT_TO_REGEX)
-        self.assert_parser('ab((?P<G1>)((?P<G2>)c)?|(?P<G3>)de((?P<G4>)(?P<H>2[0-3]|[0-1]\d|\d))?)', {'G0': 'ab%G1%%G3%', 'G1': '%G2%', 'G2': 'c', 'G3': 'de%G4%', 'G4': '%H'}, 'ab%(c%?%|de%H%?%)', DEFAULT_TO_REGEX)
-        self.assert_parser('((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', {'G1': '%H:', 'G0': '%G1%%M'}, '%(%H%!:%)%M', DEFAULT_TO_REGEX)
+        self.assert_parser(u'abc', {u'G0': u'abc'}, u'abc', {})
+        self.assert_parser(u'aBc', {u'G0': u'a%bc'}, u'a%!bc', {u'%!b': u'B'})
+        self.assert_parser(u'ab((?P<G1>)xyz)c', {u'G0': u'ab%G1%c', u'G1': u'xyz'}, u'ab%(xyz%)c', HIDE_CHOICES)
+        self.assert_parser(u'ab((?P<G1>)xy|(?P<G2>)z)c', {u'G0': u'ab%G1%%G2%c', u'G1': u'xy', u'G2': u'z'}, u'ab%(xy%|z%)c', HIDE_CHOICES)
+        self.assert_parser(u'ab((?P<G1>)c)?', {u'G0': u'ab%G1%', u'G1': u'c'}, u'abc%?', DEFAULT_TO_REGEX)
+        self.assert_parser(u'ab((?P<G1>)((?P<G2>)c)?|(?P<G3>)de((?P<G4>)(?P<H>2[0-3]|[0-1]\d|\d))?)', {u'G0': u'ab%G1%%G3%', u'G1': u'%G2%', u'G2': u'c', u'G3': u'de%G4%', u'G4': u'%H'}, u'ab%(c%?%|de%H%?%)', DEFAULT_TO_REGEX)
+        self.assert_parser(u'((?P<G1>)(?P<H>2[0-3]|[0-1]\d|\d)[^\w]+)(?P<M>[0-5]\d|\d)', {u'G1': u'%H:', u'G0': u'%G1%%M'}, u'%(%H%!:%)%M', DEFAULT_TO_REGEX)
 
     def assert_reconstruct(self, target, expr, text):
         pattern, rebuild, regexp = _to_regexp(expr)
@@ -70,42 +70,42 @@ class ParserTest(TestCase):
         assert result == target, result
 
     def test_reconstruct(self):
-        self.assert_reconstruct('ab', 'a{b|c}d?', 'ab')
-        self.assert_reconstruct('ac', 'a{b|c}d?', 'ac')
-        self.assert_reconstruct('abd', 'a{b|c}d?', 'abd')
-        self.assert_reconstruct('%S', '{{%H:}?%M:}?%S', '56')
-        self.assert_reconstruct('ab', 'a ?b', 'ab')
-        self.assert_reconstruct('a b', 'a ?b', 'a b')
-        self.assert_reconstruct('%%%M!{|}', '%%%M%!%{%|%}', '%59!{|}')
+        self.assert_reconstruct(u'ab', u'a{b|c}d?', u'ab')
+        self.assert_reconstruct(u'ac', u'a{b|c}d?', u'ac')
+        self.assert_reconstruct(u'abd', u'a{b|c}d?', u'abd')
+        self.assert_reconstruct(u'%S', u'{{%H:}?%M:}?%S', u'56')
+        self.assert_reconstruct(u'ab', u'a ?b', u'ab')
+        self.assert_reconstruct(u'a b', u'a ?b', u'a b')
+        self.assert_reconstruct(u'%%%M!{|}', u'%%%M%!%{%|%}', u'%59!{|}')
 
 
 class StripTest(TestCase):
 
     def test_strip(self):
         s = strip(DMY[0])
-        assert s == '%d/%m/%Y %H:%M:%S.%f %Z', s
-        s = strip('%! %! %?')
-        assert s == '  '
-        s = strip('%%%M!{|}')
-        assert s == '%%%M!{|}', s
-        s = strip('(|)!%%')
-        assert s == '(|)!%%', s
+        assert s == u'%d/%m/%Y %H:%M:%S.%f %Z', s
+        s = strip(u'%! %! %?')
+        assert s == u'  '
+        s = strip(u'%%%M!{|}')
+        assert s == u'%%%M!{|}', s
+        s = strip(u'(|)!%%')
+        assert s == u'(|)!%%', s
 
 
 class InvertTest(TestCase):
 
     def test_invert(self):
-        i = invert('a')
-        assert i == '%a', i
-        i = invert('!a')
-        assert i == '%!a', i
-        i = invert('a?')
-        assert i == '%a%?', i
-        i = invert('(a|!b)?:')
-        assert i == '%(%a%|%!b%)%?:', i
-        i = invert('(a|!b)?!:')
-        assert i == '%(%a%|%!b%)%?%!:', i
-        i = invert('%a')
-        assert i == 'a', i
-        i = invert('%!')
-        assert i == '!', i
+        i = invert(u'a')
+        assert i == u'%a', i
+        i = invert(u'!a')
+        assert i == u'%!a', i
+        i = invert(u'a?')
+        assert i == u'%a%?', i
+        i = invert(u'(a|!b)?:')
+        assert i == u'%(%a%|%!b%)%?:', i
+        i = invert(u'(a|!b)?!:')
+        assert i == u'%(%a%|%!b%)%?%!:', i
+        i = invert(u'%a')
+        assert i == u'a', i
+        i = invert(u'%!')
+        assert i == u'!', i

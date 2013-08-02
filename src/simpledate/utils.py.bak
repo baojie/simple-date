@@ -2,8 +2,8 @@
 from collections import MutableSet
 
 
-class MRUSortedIterable(object):
-    u'''
+class MRUSortedIterable:
+    '''
     An iterable that re-orders the contents to move the most recently used item
     (the last accessed on the previous iteration) to the start of the sequence.
 
@@ -11,7 +11,7 @@ class MRUSortedIterable(object):
     '''
 
     def __init__(self, data):
-        u'''
+        '''
         :param data: The data to iterate over.
         :return: An iterable that adapts to provide MRU values first.
         '''
@@ -19,7 +19,7 @@ class MRUSortedIterable(object):
         self._i = 0
 
     def __iter__(self):
-        u'''
+        '''
         :return: A new iterator.
         '''
         # the iterator records the last accessed value in `_i`.  when a new
@@ -35,21 +35,21 @@ class MRUSortedIterable(object):
         self._i = 0
 
 
-class DebugLog(object):
-    u'''
+class DebugLog:
+    '''
     Base class supporting a simple log to stdout for debugging.  Is it possible
     to use Python logging and do the same thing?
     '''
 
     def _get_log(self, debug):
-        u'''
+        '''
         :param debug: True to enable logging.
         :return: A logger that will print to stdout if `debug` is `True`
         '''
         return self._log if debug else self._drop
 
     def _log(self, template, *args, **kargs):
-        u'''
+        '''
         A logger that prints to stdout.
 
         :param template: A string that can contain embedded {0}-style
@@ -57,10 +57,10 @@ class DebugLog(object):
         :param args: Format arguments.
         :param kargs: Named format arguments.
         '''
-        print u'%s: %s' % (self.__class__.__name__, template.format(*args, **kargs))
+        print('%s: %s' % (self.__class__.__name__, template.format(*args, **kargs)))
 
     def _drop(self, template, *args, **kargs):
-        u'''
+        '''
         A null logger that discards its arguments.
 
         :param template: Unused.
@@ -123,15 +123,15 @@ class OrderedSet(MutableSet):
 
     def pop(self, last=True):
         if not self:
-            raise KeyError(u'set is empty')
+            raise KeyError('set is empty')
         key = self.end[1][0] if last else self.end[2][0]
         self.discard(key)
         return key
 
     def __repr__(self):
         if not self:
-            return u'%s()' % (self.__class__.__name__,)
-        return u'%s(%r)' % (self.__class__.__name__, list(self))
+            return '%s()' % (self.__class__.__name__,)
+        return '%s(%r)' % (self.__class__.__name__, list(self))
 
     def __eq__(self, other):
         if isinstance(other, OrderedSet):
@@ -154,10 +154,10 @@ class OrderedSet(MutableSet):
     def intersect(*sets):
         intersection = OrderedSet()
         if sets:
-            first = iter(sets).next()
+            first = next(iter(sets))
             for item in first:
                 rest = iter(sets)
-                rest.next()  # drop first
+                next(rest)  # drop first
                 for set in rest:
                     if item not in set:
                         break
@@ -170,7 +170,7 @@ def set_kargs_only(**kargs):
 
 
 def always_tuple(value, none=()):
-    u'''
+    '''
     Some arguments can be a single value, or a sequence (tuple or list).
     This function normalizes the input to always be a sequence.
 
@@ -182,7 +182,7 @@ def always_tuple(value, none=()):
     if value is None:
         return none
     # elif isinstance(value, Iterable) and not isinstance(value, str):
-    elif hasattr(value, u'__iter__') and not isinstance(value, unicode):
+    elif hasattr(value, '__iter__') and not isinstance(value, str):
         return tuple(value)
     else:
         return (value,)
