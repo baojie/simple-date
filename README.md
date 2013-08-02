@@ -1,12 +1,19 @@
 simple-date
 ===========
 
+This is my backport to python 2.7. Work in progress, not working yet
+
+Original repo is for python 3.x by andrew cooke https://github.com/andrewcooke/simple-date
+
+
+
 A wrapper around the
 [datetime](http://docs.python.org/3/library/datetime.html#module-datetime),
 [pytz](http://pytz.sourceforge.net/) and
 [tzlocal](https://pypi.python.org/pypi/tzlocal)
 packages for Python 3.2+.
 [Full docs](#documentation) below.
+
 
 Examples
 --------
